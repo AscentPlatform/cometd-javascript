@@ -18,6 +18,7 @@ export interface Transport {
     readonly type: string;
     url: string;
     accept(version: string, crossDomain: boolean, url: string): boolean;
+    abort(): void;
 }
 
 export interface TransportRegistry {
@@ -91,8 +92,9 @@ export type Status = 'disconnected' | 'handshaking' | 'connecting' | 'connected'
 
 export interface Extension {
     incoming?(message: Message): Message | null;
-
     outgoing?(message: Message): Message | null;
+    registered?(name: string, cometd: CometD): void;
+    unregistered?(): void;
 }
 
 export class CometD {
@@ -110,7 +112,7 @@ export class CometD {
 
     getTransportRegistry(): TransportRegistry;
 
-    configure(options: Configuration): void;
+    configure(options: Configuration | string): void;
 
     handshake(handshakeCallback?: Callback): void;
     handshake(handshakeProps: object, handshakeCallback?: Callback): void;
