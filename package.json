@@ -1,8 +1,7 @@
 {
-  "name": "@ascent-platform/cometd",
-  "private": true,
-  "version": "7.0.13+0.1.0",
-  "description": "Comet and WebSocket library for web messaging",
+  "name": "@ascentplatform/cometd",
+  "version": "0.1.0",
+  "description": "Comet and WebSocket library for web messaging - For NodeJS",
   "keywords": [
     "comet",
     "websocket",
