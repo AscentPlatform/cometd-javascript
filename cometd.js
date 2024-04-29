@@ -3606,7 +3606,6 @@
     RequestTransport: RequestTransport,
     LongPollingTransport: LongPollingTransport,
     CallbackPollingTransport: CallbackPollingTransport,
-    WebSocketTransport: WebSocketTransport,
     Utils: Utils,
     Z85: Z85,
   };
