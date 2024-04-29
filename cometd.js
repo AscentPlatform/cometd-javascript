@@ -422,7 +422,7 @@
         };
         const xhr = request.xhr;
         failure.httpCode = this.xhrStatus(xhr);
-        this.abortXHR(xhr);
+        this.abortFetch(request.abortController);
         this._debug(errorMessage);
         this.complete(request, false, request.metaConnect);
         envelope.onFailure(xhr, envelope.messages, failure);
@@ -622,7 +622,7 @@
         const request = _requests[i];
         if (request) {
           this._debug("Aborting request", request);
-          if (!this.abortXHR(request.xhr)) {
+          if (!this.abortFetch(request.abortController)) {
             this.transportFailure(request.envelope, request, {
               reason: "abort",
             });
@@ -632,7 +632,7 @@
       const metaConnectRequest = _metaConnectRequest;
       if (metaConnectRequest) {
         this._debug("Aborting /meta/connect request", metaConnectRequest);
-        if (!this.abortXHR(metaConnectRequest.xhr)) {
+        if (!this.abortFetch(request.abortController)) {
           this.transportFailure(
             metaConnectRequest.envelope,
             metaConnectRequest,
@@ -650,12 +650,11 @@
       _envelopes = [];
     };
 
-    _self.abortXHR = function (xhr) {
-      if (xhr) {
+    _self.abortFetch = function (controller) {
+      if (controller) {
         try {
-          const state = xhr.readyState;
-          xhr.abort();
-          return state !== window.XMLHttpRequest.UNSENT;
+          controller.abort();
+          return true;
         } catch (x) {
           this._debug(x);
         }
@@ -686,9 +685,7 @@
     _self.accept = (version, crossDomain, url) =>
       _supportsCrossDomain || !crossDomain;
 
-    _self.newXMLHttpRequest = () => new window.XMLHttpRequest();
-
-    _self.xhrSend = (packet) => {
+    _self.fetchSend = (packet) => {
       // Set headers
       const headers = new Headers();
       if (packet.headers) {
@@ -700,13 +697,15 @@
       }
       headers.set("Content-Type", "application/json;charset=UTF-8");
 
+      const abortController = new AbortController();
       // Perform fetch
-      return fetch({
+      fetch({
         method: "POST",
         url: packet.url,
         headers: headers,
         credentials: "include",
         body: packet.body,
+        signal: abortController.signal,
       })
         .then((response) => {
           if (response.ok) {
@@ -717,6 +716,8 @@
         })
         .then((text) => packet.onSuccess(text))
         .catch((err) => packet.onError(JSON.stringify(err)));
+
+      return abortController;
     };
 
     _self.transportSend = function (envelope, request) {
@@ -731,7 +732,7 @@
 
       try {
         let sameStack = true;
-        request.xhr = this.xhrSend({
+        request.abortController = this.fetchSend({
           transport: this,
           url: envelope.url,
           sync: envelope.sync,
