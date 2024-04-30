@@ -420,12 +420,10 @@
         const failure = {
           reason: errorMessage,
         };
-        const xhr = request.xhr;
-        failure.httpCode = this.xhrStatus(xhr);
         this.abortFetch(request.abortController);
         this._debug(errorMessage);
         this.complete(request, false, request.metaConnect);
-        envelope.onFailure(xhr, envelope.messages, failure);
+        envelope.onFailure(undefined, envelope.messages, failure);
       }
     }
 
@@ -523,9 +521,7 @@
             const failure = {
               reason: "Previous request failed",
             };
-            const xhr = nextRequest.xhr;
-            failure.httpCode = this.xhrStatus(xhr);
-            nextEnvelope.onFailure(xhr, nextEnvelope.messages, failure);
+            nextEnvelope.onFailure(undefined, nextEnvelope.messages, failure);
           }, 0);
         }
       }
@@ -561,7 +557,7 @@
         if (responses && responses.length > 0) {
           envelope.onSuccess(responses);
         } else {
-          envelope.onFailure(request.xhr, envelope.messages, {
+          envelope.onFailure(undefined, envelope.messages, {
             httpCode: 204,
           });
         }
@@ -577,7 +573,7 @@
           "cancelled waiting for failed message replies"
         );
         this.complete(request, false, request.metaConnect);
-        envelope.onFailure(request.xhr, envelope.messages, failure);
+        envelope.onFailure(undefined, envelope.messages, failure);
       }
     };
 
@@ -660,17 +656,6 @@
         }
       }
       return false;
-    };
-
-    _self.xhrStatus = function (xhr) {
-      if (xhr) {
-        try {
-          return xhr.status;
-        } catch (x) {
-          this._debug(x);
-        }
-      }
-      return -1;
     };
 
     return _self;
@@ -764,7 +749,6 @@
                 const failure = {
                   exception: x,
                 };
-                failure.httpCode = this.xhrStatus(request.xhr);
                 this.transportFailure(envelope, request, failure);
               }
             }
@@ -782,7 +766,6 @@
               reason: reason,
               exception: exception,
             };
-            failure.httpCode = this.xhrStatus(request.xhr);
             if (sameStack) {
               // Keep the semantic of calling callbacks asynchronously.
               this.setTimeout(() => {
