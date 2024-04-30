@@ -20,6 +20,10 @@
 
 /* CometD Version 7.0.13 */
 
+const makeFetchCookie = require("fetch-cookie");
+
+const fetchCookie = makeFetchCookie.default(fetch);
+
 ((root, factory) => {
   if (typeof exports === "object") {
     // CommonJS.
@@ -677,6 +681,7 @@
         for (let headerName in packet.headers) {
           if (packet.headers.hasOwnProperty(headerName)) {
             headers.set(headerName, packet.headers[headerName]);
+            console.log("HEADER", headerName, packet.headers[headerName]);
           }
         }
       }
@@ -684,23 +689,30 @@
 
       const abortController = new AbortController();
       // Perform fetch
-      fetch({
+      console.log("URL", packet.url);
+      console.log("BODY", packet.body);
+
+      fetchCookie(packet.url, {
         method: "POST",
-        url: packet.url,
         headers: headers,
         credentials: "include",
         body: packet.body,
         signal: abortController.signal,
       })
         .then((response) => {
-          if (response.ok) {
-            return response.text();
+          return Promise.all([response.ok, response.json(), response.headers]);
+        })
+        .then(([ok, json]) => {
+          console.log("JSON", json);
+          if (ok) {
+            packet.onSuccess(json);
           } else {
-            packet.onError(response.statusText);
+            packet.onError(json, json);
           }
         })
-        .then((text) => packet.onSuccess(text))
-        .catch((err) => packet.onError(JSON.stringify(err)));
+        .catch((err) => {
+          packet.onError(err.message, err);
+        });
 
       return abortController;
     };
@@ -732,6 +744,7 @@
             );
             let success = false;
             try {
+              console.log("RESPONSE", response);
               const received = this.convertToMessages(response);
               if (received.length === 0) {
                 _supportsCrossDomain = false;
@@ -1286,40 +1299,6 @@
             _config.appendMessageTypeToURL = false;
           }
         }
-      }
-
-      if (Worker && Blob && URL && _config.useWorkerScheduler) {
-        let code = WorkerScheduler.toString();
-        // Remove the function declaration, the opening brace and the closing brace.
-        code = code.substring(code.indexOf("{") + 1, code.lastIndexOf("}"));
-        const blob = new Blob([code], {
-          type: "application/json",
-        });
-        const blobURL = URL.createObjectURL(blob);
-        const worker = new Worker(blobURL);
-        _scheduler.setTimeout = (funktion, delay) => {
-          const id = _scheduler.register(funktion);
-          worker.postMessage({
-            id: id,
-            type: "setTimeout",
-            delay: delay,
-          });
-          return id;
-        };
-        _scheduler.clearTimeout = (id) => {
-          _scheduler.unregister(id);
-          worker.postMessage({
-            id: id,
-            type: "clearTimeout",
-          });
-        };
-        worker.onmessage = (e) => {
-          const id = e.data.id;
-          const funktion = _scheduler.unregister(id);
-          if (funktion) {
-            funktion();
-          }
-        };
       }
     }
 
