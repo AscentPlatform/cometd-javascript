@@ -681,7 +681,6 @@ const fetchCookie = makeFetchCookie.default(fetch);
         for (let headerName in packet.headers) {
           if (packet.headers.hasOwnProperty(headerName)) {
             headers.set(headerName, packet.headers[headerName]);
-            console.log("HEADER", headerName, packet.headers[headerName]);
           }
         }
       }
@@ -689,9 +688,6 @@ const fetchCookie = makeFetchCookie.default(fetch);
 
       const abortController = new AbortController();
       // Perform fetch
-      console.log("URL", packet.url);
-      console.log("BODY", packet.body);
-
       fetchCookie(packet.url, {
         method: "POST",
         headers: headers,
@@ -703,7 +699,6 @@ const fetchCookie = makeFetchCookie.default(fetch);
           return Promise.all([response.ok, response.json(), response.headers]);
         })
         .then(([ok, json]) => {
-          console.log("JSON", json);
           if (ok) {
             packet.onSuccess(json);
           } else {
@@ -744,7 +739,6 @@ const fetchCookie = makeFetchCookie.default(fetch);
             );
             let success = false;
             try {
-              console.log("RESPONSE", response);
               const received = this.convertToMessages(response);
               if (received.length === 0) {
                 _supportsCrossDomain = false;
